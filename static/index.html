@@ -1,0 +1,556 @@
+<html id="dtop" class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="author" content="Dominique Dierickx">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dtop</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/dtop.css"> 
+
+	<script type="text/javascript" src="js/knockout-3.0.0.js"></script>
+	<script type="text/javascript" src="js/knockout.simplegrid.3.0.js"></script>
+    <script type="text/javascript" src="js/modernizr.js"></script>
+  </head>
+  <body>   
+
+	<div id="auth-dialog" style="display: none">
+	  <p>&nbsp</p>
+      <form class="form-signin well" role="form">
+        <h3 class="form-signin-heading" style="margin-top: 5px" data-bind="text: serverInfo().Name"></h3>
+        <p data-bind="text: serverInfo().Description"></p>
+        <input type="username" data-bind="value: username" class="form-control" placeholder="Username" required autofocus>
+        <input type="password" style="margin-top: 10px" data-bind="value: password" class="form-control" placeholder="Password" required>
+        <button class="btn btn-lg btn-primary btn-block" type="submit" data-bind="click: requestToken">Log in</button>
+		<p></p>
+		<div class="alert alert-danger" data-bind="visible: failedLogin">Whoops... invalid credentials.</div>
+      	<div style="font-size:x-small; text-align:center; margin-top: 15px;"><a href="" target="#blank">dtop</a> version <span data-bind="text: serverInfo().Version"></span></div>
+      </form>
+	</div>
+  
+  <div id="content" style="display: none">
+	<nav class="navbar navbar-default" role="navigation">
+	  <div class="container-fluid">
+	    <div class="navbar-header">
+	      <a class="navbar-brand" href="#">dtop</a>
+	    </div>
+	    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	      <ul class="nav navbar-nav">
+	        <li><a href="#systeminfo">System info</a></li>
+	        <li><a href="#cpu">CPU</a></li>
+	        <li><a href="#processes">Processes</a></li>
+	        <li><a href="#diskusage">Disks</a></li>
+	        <li><a href="#services">Services</a></li>
+	      </ul>
+	      <ul class="nav navbar-nav navbar-right">
+	        <li><a href="https://github.com/ddierickx/dtop" target="_blank">About</a></li>
+	      </ul>
+	    </div>
+	</nav>
+
+  	<div class="container-fluid">
+  		<div class="row">
+  			<div class="col-md-6">
+				<div class="panel panel-default">
+				  <div class="panel-heading">
+				    <h3 class="panel-title">System information</h3><a name="systeminfo"></a>
+				  </div>
+				  <!-- List group -->
+				  <ul class="list-group">
+					  <li class="list-group-item">
+					  	<span class="label label-default pull-right" data-bind="text: basicInfo().Hostname"></span>
+					    Hostname
+					  </li>
+					  <li class="list-group-item">
+					  	<span class="label label-default pull-right" data-bind="text: basicInfo().DistributionInfo"></span>
+					    Distro
+					  </li>
+					  <li class="list-group-item">
+					    <span class="label label-default pull-right" data-bind="text: basicInfo().SystemInfo"></span>
+					    Kernel version
+					  </li>
+				  </ul>
+				</div>
+  			</div>
+  			<div class="col-md-6">
+				<div class="panel panel-default">
+				  <div class="panel-heading">
+				    <h3 class="panel-title">Overview</h3>
+				  </div>
+					<ul class="list-group">
+					  <li class="list-group-item">
+					  	<span class="label label-success pull-right" data-bind="text: uptime_string"></span>
+					    Uptime
+					  </li>
+					  <li class="list-group-item">
+					  	<span class="label label-success pull-right" data-bind="text: process_count()"></span>
+					    Processes
+					  </li>
+					  <li class="list-group-item">
+					    <span class="label label-success pull-right" data-bind="text: users().All.length"></span>
+					    <span data-bind="attr { title: users_tooltip }">Users</span>
+					  </li>
+					</ul>
+				 </div>
+  			</div>
+  		</div>
+  		<div class="row">
+  			<div class="col-md-6">
+				<div class="panel panel-default">
+				  <div class="panel-heading">
+				    <h3 class="panel-title">Performance</h3>
+				  </div>
+					<ul class="list-group">
+					  <li class="list-group-item">
+					    <span class="label pull-right" data-bind="text: Math.floor(100*(memory_used() / memory().TotalKb)) + '%', css: memoryUsageColor"></span>
+					    Memory usage
+					  </li>
+					  <li class="list-group-item">
+					    <span class="label pull-right" data-bind="text: cpu_used() + '%', css: cpuUsageColor"></span>
+					    Cpu usage
+					  </li>
+					  <li class="list-group-item">
+					    <span class="pull-right">
+					  		<span data-bind="text: loadAvg().Avg1, css: loadAvgColor1"></span>
+					      	<span data-bind="text: loadAvg().Avg5, css: loadAvgColor5"></span>
+					      	<span data-bind="text: loadAvg().Avg15, css: loadAvgColor15"></span>
+					    </span>
+					    Load Average
+					  </li>
+					</ul>
+				 </div>
+  			</div>
+	  		<div class="col-md-6">
+				<div class="panel panel-default">
+				  <div class="panel-heading">
+				    <h3 class="panel-title">Memory</h3>
+				  </div>
+					<ul class="list-group">
+					  <li class="list-group-item">
+					    <span class="label  pull-right" data-bind="text: (Math.floor(memory().TotalKb/1024)-Math.round(memory_used() / 1024)) + ' of ' + Math.floor(memory().TotalKb/1024) + 'MB', css: memoryUsageColor"></span>
+					    Free
+					  </li>
+					  <li class="list-group-item">
+					    <span class="label label-info pull-right" data-bind="text: (Math.floor(memory().BuffersKb / 1024)) + ' MB' "></span>
+					    <span class="label label-warning pull-right" data-bind="text: (Math.floor(memory().CachedKb / 1024)) + ' MB'"></span>
+						<span class="label label-success pull-right" data-bind="text: Math.round(memory_used() / 1024) + ' MB'"></span>
+					    Used - Cached - Buffers
+					  </li>
+					  <li class="list-group-item meter-li">
+					    <span id="memory-meter"></span>
+					  </li>
+					</ul>
+				 </div>
+      		</div>
+  		</div>
+
+
+    <div class="row">
+	  <div class="col-md-6">
+		<div class="panel panel-default">
+		  <div class="panel-heading">
+		    <h3 class="panel-title">Disk usage</h3><a name="diskusage"></a>
+		  </div>
+			<div id="disk-meters" class="list-group">
+				<div data-bind="simpleGrid: diskUsageGridViewModel"></div>
+			</div>
+		</div>
+      </div>
+	<div class="col-md-6">
+		<div class="panel panel-default">
+		  <div class="panel-heading">
+		    <h3 class="panel-title">Services</h3><a name="services"></a>
+		  </div>
+		  	<div class="list-group">
+				<div data-bind="simpleGrid: servicesGridViewModel"></div>
+			</div>
+		</div>
+      </div>
+    </div>
+
+
+    <div class="row">
+	  <div class="col-md-12">
+		<div class="panel panel-default">
+		  <div class="panel-heading">
+		    <h3 class="panel-title">CPU</h3><a name="cpu"></a>
+		  </div>
+			<div id="cpu-meters" class="list-group">
+			</div>
+		</div>
+      </div>
+     </div>
+
+    <div class="row">
+	  <div class="col-md-12">
+		<div class="panel panel-default">
+		  <div class="panel-heading">
+		    <h3 class="panel-title">Processes</h3><a name="processes"></a>
+		  </div>
+		  	<div class="list-group">
+			  	<div class="list-group-item">
+					<input type="text" class="form-control" id="txtFilter" placeholder="Filter" data-bind="value: processFilter, valueUpdate: 'afterkeydown'">
+				</div>
+			  	<div class="list-group-item">
+					<div data-bind="simpleGrid: processGridViewModel"></div>
+				</div>
+			</div>
+		</div>
+      </div>
+    </div>
+
+	</div>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery.sparkline.min.js"></script>
+
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+      // string repeat
+	  String.prototype.repeat = function(num) { return new Array( num + 1 ).join( this ); }
+
+      // generic sortby object property.
+	  function sortBy(field, reverse, primer){
+		   var key = primer ? 
+		       function(x) {return primer(x[field])} : 
+		       function(x) {return x[field]};
+
+		   reverse = [-1, 1][+!!reverse];
+
+		   return function (a, b) {
+		       return a = key(a), b = key(b), reverse * ((a > b) - (b > a));
+	     	}
+	  }
+
+	  // makes a digit string two digits!
+      function twoDigits(s) {
+      	return ("0" + s).slice(-2);
+      }
+
+      function getLoadAvgColor(vm, cpus, loadAvg) {
+        var perCpu = loadAvg / cpus;
+        			
+        if (perCpu < vm.LOADAVG_LIMIT_WARNING) {
+        	return "info-normal";
+        } else if (perCpu < vm.LOADAVG_LIMIT_ALERT) {
+        	return "info-warning";
+        } else {
+        	return "info-alert";
+        }
+      }
+
+      function getPerformanceColor(vm, metric) {
+        if (metric < 70) {
+        	return "label-success";
+        } else if (metric < 90) {
+        	return "label-warning";
+        } else {
+        	return "label-danger";
+        }
+      }
+
+      $(document).ready(function () {
+      		var ViewModel = function() {
+      			var self = this;
+
+      			/* consts */
+      			self.slice = function(ar) { return ar.slice(Math.max(ar.length - 100, 0), ar.length) };
+				self.LOADAVG_LIMIT_WARNING = 0.50
+				self.LOADAVG_LIMIT_ALERT = 0.70;
+				self.PS_COMMAND_LENGTH=150;
+				/* observables */
+				self.failedLogin = ko.observable(false);
+				self.username = ko.observable("");
+				self.password = ko.observable("");
+				self.serverInfo = ko.observable({});
+				self.initialized = ko.observable(false);
+      			self.processFilter = ko.observable("");
+      			self.cpu = ko.observable({});
+				self.memory = ko.observable({});
+				self.processes = ko.observableArray([]);
+				self.services = ko.observableArray([]);
+				self.diskInfo = ko.observableArray([]);
+				self.users = ko.observable({ All: [] });
+				self.uptime = ko.observable({});
+				self.loadAvg = ko.observable({});
+				self.basicInfo = ko.observable({});
+				self.process_count = ko.observable(0);
+
+			    self.processGridViewModel = new ko.simpleGrid.viewModel({
+			        data: self.processes,
+			        columns: [
+			            { headerText: "Pid", rowText: "Pid" },
+			            { headerText: "User", rowText: "User" },
+			            { headerText: "Cpu", rowText: function(item) {  return "<span class='label " + getPerformanceColor(self, item.Cpu) + "'>" + item.Cpu + "</span>"; } },
+			            { headerText: "Mem", rowText: function(item) {  return "<span class='label " + getPerformanceColor(self, item.Mem) + "'>" + item.Mem + "</span>"; } },
+			            { headerText: "Command",
+			            	rowText:
+			            		function(item) {
+			            			return "<a href='javascript:void(0);' onclick=\"javascript:alert('" + item.Command + "');\">" + ( item.Command.length > self.PS_COMMAND_LENGTH ? $.trim(item.Command).substring(0, self.PS_COMMAND_LENGTH) + '...' : item.Command  ) + "</a>";
+			            		}
+			            },
+			            /*{ 
+			            	headerText: "",
+			            	rowText:
+			            		function(item) {
+			            			return "<button type=\"button\" class=\"btn btn-primary\"> KILL </button>";
+			            		}
+			        	},*/
+			        ],
+			        pageSize: 10
+			    });
+
+				self.servicesGridViewModel = new ko.simpleGrid.viewModel({
+			        data: self.services,
+			        columns: [
+			            { headerText: "Name", rowText: "Name" },
+			            { headerText: "Running",
+			             	rowText: function(item) {
+			             		var clazz = item.Running ? "label-success" : "label-danger";
+			             		var txt = item.Running ? "YES" : "NO";
+			            		return "<span class='label " + clazz + "'>" + txt + "</span>";
+			            	}
+			        	},
+			        ],
+			        hidePagination: true,
+			        pageSize: 200	
+			    });
+
+			    self.diskUsageGridViewModel = new ko.simpleGrid.viewModel({
+			        data: self.diskInfo,
+			        hidePagination: true,
+			        columns: [
+			            { headerText: "Disk", rowText: "Name" },
+			            { headerText: "Mount", rowText: "MountPoint" },
+			            { headerText: "Type", rowText: "Type" },
+			            { headerText: "Size", rowText: "Size" },
+			            { headerText: "Used", rowText: "Used" },
+			            { headerText: "Free", rowText: "Available" },
+			            { headerText: "Used", rowText: function(item) {  return "<span class='label " + getPerformanceColor(self, item.UsedPct.replace("%", "")) + "'>" + item.UsedPct + "</span>"; } },
+			            /*{ 
+			            	headerText: "",
+			            	rowText:
+			            		function(item) {
+			            			return "<button type=\"button\" class=\"btn btn-primary\"> KILL </button>";
+			            		}
+			        	},*/
+			        ],
+			        pageSize: 10
+			    });
+
+
+				/* computed */
+				self.uptime_string = ko.computed(function() {
+        			var val = self.uptime();
+        			days = Math.floor(val / (60*60*24));
+        			remainder = (val % (days*60*60*24)) || val;
+        			hours = Math.floor(remainder / (60*60));
+        			remainder = (remainder % (hours*60*60)) || remainder;
+        			minutes = Math.floor(remainder / 60);
+        			remainder = (remainder % (minutes * 60)) || remainder;
+        			seconds = Math.floor(remainder);
+        			return days + " days, " + twoDigits(hours) + ":" + twoDigits(minutes) + ":" + twoDigits(seconds);
+        		}, self);
+        		self.cpu_used = ko.computed(function () {
+        			var used = 0;
+        			var cpus = self.cpu();
+        			for (i = 0; i < cpus.length; i++) {
+						used += Math.round(cpus[i].Usage);
+					}
+					return Math.floor(used / cpus.length);
+        		}, self);
+        		self.memory_used = ko.computed(function () {
+        			var used = self.memory().TotalKb - self.memory().CachedKb - self.memory().BuffersKb - self.memory().FreeKb;
+        			return used;
+        		}, self);
+				self.memory_swapped = ko.computed(function() {
+        			return self.memory().SwapTotalKb - self.memory().SwapFreeKb;
+        		}, self);
+        		self.users_tooltip = ko.computed(function() {
+        			return $.map(self.users().All, function(obj, i) { return obj.Name; }).join(", ");
+        		}, self);
+        		self.loadAvgColor1 = ko.computed(function() { return getLoadAvgColor(self, self.cpu().length, self.loadAvg().Avg1); }, self);
+        		self.loadAvgColor5 = ko.computed(function() { return getLoadAvgColor(self, self.cpu().length, self.loadAvg().Avg5); }, self);
+        		self.loadAvgColor15 = ko.computed(function() { return getLoadAvgColor(self, self.cpu().length, self.loadAvg().Avg15); }, self);
+
+        		self.cpuUsageColor = ko.computed(function() { return getPerformanceColor(self, self.cpu_used()); }, self);
+        		self.memoryUsageColor = ko.computed(function() { return getPerformanceColor(self, Math.floor(100*(self.memory_used() / self.memory().TotalKb))); }, self);
+		
+				self.cpu.subscribe(function(cpus) {
+        			if (viewModel.initialized()) {
+						for (i = 0; i < cpus.length; i++) {
+							self.cpu_usages[i].push(Math.round(cpus[i].Usage));
+							self.cpu_usages[i] = self.slice(self.cpu_usages[i]);
+							$('#core_progress_' + i).sparkline(self.cpu_usages[i], { type: 'line', tooltipSuffix:'%', lineColor: '#2ba6cb', width: '100%', height: '34px', chartRangeMin: 0, chartRangeMax: 100 } );
+							$('#core_progress_label_' + i).removeClass("label-info");
+							$('#core_progress_label_' + i).removeClass("label-danger");
+							$('#core_progress_label_' + i).removeClass("label-warning");
+							$('#core_progress_label_' + i).addClass(getPerformanceColor(self, cpus[i].Usage));
+							//$('#core_progress_value_' + i).addClass(getPerformanceColor(cpus[i].Usage));
+							$('#core_progress_value_' + i).text(Math.round(cpus[i].Usage) + "%");
+						}   				 	
+					}
+   				});
+
+        		self.memory_usage = { Used: [], Buffers: [], Cached: [], Swapped: [] };
+   				self.memory.subscribe(function(memory) {
+   					self.memory_usage.Used.push(Math.round((self.memory_used() / self.memory().TotalKb) * 100));
+   					self.memory_usage.Buffers.push(Math.round((self.memory().BuffersKb / self.memory().TotalKb) * 100));
+   					self.memory_usage.Cached.push(Math.round((self.memory().CachedKb / self.memory().TotalKb) * 100));
+   					self.memory_usage.Swapped.push(Math.round((self.memory_swapped() / self.memory().SwapTotalKb) * 100));
+   					self.memory_usage.Used = self.slice(self.memory_usage.Used);
+   					self.memory_usage.Buffers = self.slice(self.memory_usage.Buffers);
+   					self.memory_usage.Cached = self.slice(self.memory_usage.Cached);
+   					self.memory_usage.Swapped = self.slice(self.memory_usage.Swapped);
+   					var options_used = { type: 'line', tooltipSuffix:'% used', lineColor: '#43ac6a', fillColor: '#A0EDBC', width: '100%', height: '40px', chartRangeMin: 0, chartRangeMax: 100 };
+   					var options_buffers = { type: 'line', tooltipSuffix:'% buffers', composite: true, lineColor: '#2ba6cb', fillColor: '#95D5E9', width: '100%', height: '40px', chartRangeMin: 0, chartRangeMax: 100 };
+   					var options_cached = { type: 'line', tooltipSuffix:'% cached', composite: true, lineColor: '#f08a24', fillColor: '#FFD3A7', width: '100%', height: '40px', chartRangeMin: 0, chartRangeMax: 100 };
+   					var options_swapped = { type: 'line', tooltipSuffix:'% cached', composite: true, lineColor: '#ff0000', fillColor: '#FFA5A5', width: '100%', height: '40px', chartRangeMin: 0, chartRangeMax: 100 };
+   					
+   					//var options_swapped = { type: 'line', tooltipSuffix:'% swapped', lineColor: '#FF8282', fillColor: '#FF8282', width: '50px', height: 'auto', chartRangeMin: 0, chartRangeMax: 100 };
+   					$("#memory-meter").sparkline( self.memory_usage.Used, options_used );
+   					$("#memory-meter").sparkline( self.memory_usage.Cached, options_cached );
+   					$("#memory-meter").sparkline( self.memory_usage.Buffers, options_buffers );
+   					//$("#memory-meter").sparkline( self.memory_usage.Swapped, options_swapped );
+   					//$("#swapped-meter").sparkline( self.memory_usage.Swapped, options_swapped );
+				});
+
+		    	self.requestToken = function () {
+		    		username = self.username();
+		    		password = self.password();
+			    	$.post("/auth", { "username": username, "password": password })
+			    		.done(function(response) {
+			    			self.authenticationSuccess(response);
+				    	})
+				    	.error(function(response) {
+				    		self.failedLogin(true);
+				    	});
+		    	}
+
+		    	self.authenticationSuccess = function(token) {
+					self.failedLogin(false);
+				    $("#auth-dialog").fadeOut(function() { $("#content").fadeIn(); });
+				    connect(token);
+		    	}
+			};
+
+			function initializeMeters(viewModel) {
+				viewModel.cpu_usages = [];
+
+				var cores_per_line = 2;
+				var cpus = viewModel.cpu();
+				var rows = Math.ceil(cpus.length / cores_per_line);
+
+				cpu_view = $("#cpu-meters");
+
+
+				for (r = 0; r < rows; r++) {
+					var cpu_row = $("<div class='row'></div>");
+
+					for (c = 0; c < cores_per_line; c++) {
+						var i = ( r * cores_per_line ) + c;
+
+						if (i >= cpus.length) {
+							break;
+						}
+
+						var w = 12 / Math.min( (cpus.length - ( r * cores_per_line )), cores_per_line);
+						viewModel.cpu_usages[i] = [];
+						core_div = "<div class='col-md-" + w + "' id='core_row_" + i + "'>" +
+										"<span class='pull-left label' id='core_progress_label_" + i + "'><span id='core_progress_value_" + i + "'></span></span>" +
+										"<span id='core_progress_" + i + "'></span>" +
+								   "</div>";
+						$(cpu_row).append($(core_div));
+					}
+
+					$(cpu_view).append(cpu_row);
+				}
+			}
+
+			var viewModel = new ViewModel();
+
+			function connect(token) {
+				var loc = window.location;
+				var ws_uri = "ws://" + loc.host + loc.pathname + "events";
+				var websocket = new WebSocket(ws_uri);
+
+				websocket.onopen = function(evt) {
+					websocket.send(token);
+				};
+				websocket.onclose = function(evt) { };
+				websocket.onerror = function(evt) { alert("Websocket error: " + evt); };
+				websocket.onmessage = function(evt) {
+									obj = JSON.parse(evt.data)
+
+									switch (obj.Q) {
+										case "sys.cpu":
+											viewModel.cpu(obj.V);
+											break;
+										case "sys.processes":
+											var processes = obj.V;
+											viewModel.process_count(processes.length);
+											// sort on cpu usage by default
+											processes.sort(sortBy('Cpu', false));
+											filtered = $.grep(processes, function(d, i) {
+												filter = viewModel.processFilter();
+												return d.Command.indexOf(filter) != -1;
+											});
+
+											viewModel.processes(filtered);
+											break;
+										case "sys.memory":
+											viewModel.memory(obj.V);
+											break;
+										case "sys.uptime":
+											viewModel.uptime(obj.V);
+											break;
+										case "sys.users":
+											viewModel.users(obj.V);
+											break;
+										case "sys.loadavg":
+											viewModel.loadAvg(obj.V);
+											break;
+										case "sys.basics":
+											viewModel.basicInfo(obj.V);
+											break;
+										case "sys.disk":
+											var diskInfo = obj.V;
+											diskInfo.sort(sortBy('Name', true));
+											viewModel.diskInfo(obj.V);
+											break;
+										case "sys.services":
+											viewModel.services(obj.V);
+											break;
+										case "sig.ready":
+											initializeMeters(viewModel);
+											viewModel.initialized(true);
+											break;
+									}
+				};
+			}
+
+			ko.applyBindings(viewModel, document.getElementById("dtop"));
+			$("#txtFilter").focus();
+
+            function showAuthPopup(info) {
+		      	$('#auth-dialog').fadeIn();
+		    }
+
+		    function performAuth() {
+		     	$.get("/auth", function(response) {
+		      			info = JSON.parse(response);
+		      			viewModel.serverInfo(info);
+
+		      			if (info.Auth) {
+		      				showAuthPopup(info);
+		      			} else {
+		      				viewModel.requestToken();
+		      			}
+		    	});
+		    }
+
+		    performAuth();
+		});
+    </script>
+   </div>
+  </body>
+</html
